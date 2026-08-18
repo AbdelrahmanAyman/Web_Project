@@ -1,48 +1,41 @@
 const multer = require("multer");
+const path = require("path");
 const fs = require("fs");
 
-const diskStorage = multer.diskStorage({
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let dest = "uploads";
-
-    if (req.baseUrl.includes("menu")) {
-      dest = "uploads/menu";
-    } else if (req.baseUrl.includes("users") || req.baseUrl.includes("auth")) {
+    let dest = "uploads/menu";
+    if (req.baseUrl.includes("users") || req.baseUrl.includes("auth")) {
       dest = "uploads/users";
     }
-
-    try {
-      fs.mkdirSync(dest, { recursive: true });
-      cb(null, dest);
-    } catch (err) {
-      cb(err, null);
-    }
+    fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
   },
-
   filename: function (req, file, cb) {
-    let fileType = file.mimetype.split("/")[1];
-    let fileName = file.originalname;
-
-    if (req.baseUrl.includes("menu")) {
-      fileName = `menu-${Date.now()}.${fileType}`;
-    } else if (req.baseUrl.includes("users") || req.baseUrl.includes("auth")) {
-      fileName = `user-${Date.now()}.${fileType}`;
-    }
-
-    cb(null, fileName);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  const fileType = file.mimetype.split("/")[0];
+  const allowedExtensions = /jpeg|jpg|png|webp|gif/;
+  const isExtensionValid = allowedExtensions.test(
+    path.extname(file.originalname).toLowerCase()
+  );
+  const isMimeTypeValid = file.mimetype.startsWith("image/") || allowedExtensions.test(file.mimetype);
 
-  if (fileType === "image") {
-    cb(null, true);
-  } else {
-    cb(new Error("Only images are allowed"), false);
+  if (isExtensionValid || isMimeTypeValid) {
+    return cb(null, true);
   }
+
+  cb(new Error("Only images are allowed"), false);
 };
 
-const upload = multer({ storage: diskStorage, fileFilter });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 module.exports = upload;
