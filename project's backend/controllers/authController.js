@@ -4,7 +4,7 @@ const deleteUploadedFile = require("../utils/delete-uploaded-file");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
 
@@ -76,4 +76,11 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { signup, login };
+const getMe = async (req, res) => {
+  res.status(200).json({
+    status: "success",
+    data: { user: req.user },
+  });
+};
+
+module.exports = { signup, login, getMe };
